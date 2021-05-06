@@ -10,12 +10,22 @@ ui <- fluidPage(
 )
 
 server <- function(input, output, session) {
+
+  
   # precision section
   output$precision <- renderText({
-    paste("douzR precision: ", NA, "%") #TODO: getting percision
+    paste("douzR precision: ", sum(is.na(value_table)), "%") #TODO: getting percision
     })
   
   # board section
+  
+  
+  
+  
+  # saving `value_table`
+  onStop(function() {
+    saveRDS(value_table, "value_table.RDS")
+  })
 }
 
 shinyApp(ui, server)

@@ -167,8 +167,8 @@ game <- function(eps = 0.01, alpha = 0.5, verbose = F) {
     print_board(board)
   while (TRUE) {
     old_state_index <- state_index(board)
-    player_two_move <- next_move(board, player_two, epsilon = 1)  #epsilon sets to 1 to act randomly
-    board <- next_state(board, player = player_two, move = player_two_move$move) #player_two(O) move
+    player_two_move <- next_move(board, player_two, epsilon = 1)$move  #epsilon sets to 1 to act randomly
+    board <- next_state(board, player = player_two, move = player_two_move) #player_two(O) move
     if (is_done(board)) {
       if (verbose)
         print_board(board)
@@ -194,8 +194,45 @@ game <- function(eps = 0.01, alpha = 0.5, verbose = F) {
 }
 
 
+intractive_game <- function(eps = 0.01, alpha = 0.5, verbose = T) {
+  # message("starting a new game...\n")
+  board <<- initialize()
+  if (verbose)
+    print_board(board)
+  while (TRUE) {
+    old_state_index <- state_index(board)
+    player_two_move <- as.integer(readline("choose your next move: "))
+    while(!(player_two_move %in% possible_moves(board)))
+      player_two_move <- as.integer(readline("wrong move,\tchoose another move: "))
+      
+    board <<- next_state(board, player = player_two, move = player_two_move) #player_two(O) move
+    if (is_done(board)) {
+      if (verbose)
+        print_board(board)
+      
+      current_state_index <- state_index(board)
+      value_table <<- value_update(old_state_index, current_state_index, alpha)
+      return(value_get(value_table, current_state_index))
+    }
+    
+    player_one_move <- next_move(board, player = player_one, epsilon = eps)
+
+    board <<- next_state(board, player = player_one, move = player_one_move$move)
+    if(player_one_move$is_greedy){
+      current_state <- state_index(board)
+      value_table <<- value_update(old_state_index, current_state, alpha)
+    }
+    if (verbose)
+      print_board(board)
+    if (is_done(board)) {
+      index <- state_index(board)
+      return(value_get(value_table, index))
+    }
+  }
+}
+
+
 run <- function(num_bins = 40, bin_size = 100, ...){
-  value_table <<- initialize_state_value(NA)
   avg <- vector("double", num_bins)
   for(i in seq_len(num_bins)){
     temp <- vector("double", bin_size)
@@ -208,7 +245,6 @@ run <- function(num_bins = 40, bin_size = 100, ...){
 
 
 runs <- function(num_runs = 10, num_bins = 40, bin_size = 100, ...) {
-  ##CAUTION: you should make a global value_table (outside the function)
   mat <- matrix(nrow = num_runs, ncol = num_bins)
   for(i in seq_len(num_runs))
     mat[i, ] <- run(num_bins, bin_size, ...)
@@ -219,14 +255,16 @@ runs <- function(num_runs = 10, num_bins = 40, bin_size = 100, ...) {
 
 
 
-# ## using 'game()':
-value_table <- initialize_state_value(NA)
-# game(verbose = T)
-# 
-## using 'run()'
-# result_run <- run(1e5, 100, eps = 0.01, alpha = 0.5)
-# plot(result_run, ty= "l")
 
-# ## using 'runs()'
-# result_runs <- runs(10, 100, 100, eps = 0.01, alpha = 0.5)
-# plot(colMeans(result_runs), ty= "l")
+value_table <- readRDS("value_table.RDS")
+
+
+
+symbols <- setNames(c("O"," ","X"),c(-1,0,1))
+reshape2::melt(board) %>% 
+  ggplot(aes(as.factor(Var2),
+             factor(Var1, levels = c(3, 2, 1)))) +
+  geom_tile(color = "black", fill = "white") +
+  geom_text(aes(label = symbols[as.character(value)])
+            , size = 20) +
+  labs(x = "",y = "", color = "")
