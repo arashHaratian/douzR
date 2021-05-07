@@ -1,7 +1,7 @@
 # tic tac toe
-#TODO: shiny app
 
-library(purrr)
+library(tidyverse)
+library(reshape2)
 
 resample <- function(x, ...)
   x[sample.int(length(x), ...)]
@@ -194,44 +194,6 @@ game <- function(eps = 0.01, alpha = 0.5, verbose = F) {
 }
 
 
-intractive_game <- function(eps = 0.01, alpha = 0.5, verbose = T) {
-  # message("starting a new game...\n")
-  board <<- initialize()
-  if (verbose)
-    print_board(board)
-  while (TRUE) {
-    old_state_index <- state_index(board)
-    player_two_move <- as.integer(readline("choose your next move: "))
-    while(!(player_two_move %in% possible_moves(board)))
-      player_two_move <- as.integer(readline("wrong move,\tchoose another move: "))
-      
-    board <<- next_state(board, player = player_two, move = player_two_move) #player_two(O) move
-    if (is_done(board)) {
-      if (verbose)
-        print_board(board)
-      
-      current_state_index <- state_index(board)
-      value_table <<- value_update(old_state_index, current_state_index, alpha)
-      return(value_get(value_table, current_state_index))
-    }
-    
-    player_one_move <- next_move(board, player = player_one, epsilon = eps)
-
-    board <<- next_state(board, player = player_one, move = player_one_move$move)
-    if(player_one_move$is_greedy){
-      current_state <- state_index(board)
-      value_table <<- value_update(old_state_index, current_state, alpha)
-    }
-    if (verbose)
-      print_board(board)
-    if (is_done(board)) {
-      index <- state_index(board)
-      return(value_get(value_table, index))
-    }
-  }
-}
-
-
 run <- function(num_bins = 40, bin_size = 100, ...){
   avg <- vector("double", num_bins)
   for(i in seq_len(num_bins)){
@@ -255,16 +217,71 @@ runs <- function(num_runs = 10, num_bins = 40, bin_size = 100, ...) {
 
 
 
+plot_board <- function(board) {
+  symbols <- setNames(c("O", " ", "X"),c(-1, 0, 1))
+  plot <- melt(board) %>% 
+    mutate(Var2 = as.factor(Var2),
+           Var1 = factor(Var1, levels = c(3, 2, 1))) %>% 
+    ggplot(aes(Var2, Var1)) +
+    geom_tile(color = "black", fill = "white") +
+    geom_text(aes(label = symbols[as.character(value)]), size = 20) +
+    labs(x = "",y = "", color = "")
+  print(plot)
+}
+
+
+interactive_game <- function(eps = 0.01, alpha = 0.5, verbose = T) {
+  # message("starting a new game...\n")
+  board <<- initialize()
+  if (verbose)
+    plot_board(board)
+  while (TRUE) {
+    old_state_index <- state_index(board)
+
+
+    player_two_move <- as.integer(readline("choose your next move: "))
+    while(!(player_two_move %in% possible_moves(board)))
+      player_two_move <- as.integer(readline("wrong move,\tchoose another move: "))
+
+    board <<- next_state(board, player = player_two, move = player_two_move) #player_two(O) move
+    if (verbose)
+      plot_board(board)
+
+    if (is_done(board)) {
+      if (verbose)
+        plot_board(board)
+
+      current_state_index <- state_index(board)
+      value_table <<- value_update(old_state_index, current_state_index, alpha)
+      return(value_get(value_table, current_state_index))
+    }
+
+    player_one_move <- next_move(board, player = player_one, epsilon = eps)
+
+    board <<- next_state(board, player = player_one, move = player_one_move$move)
+    if(player_one_move$is_greedy){
+      current_state <- state_index(board)
+      value_table <<- value_update(old_state_index, current_state, alpha)
+    }
+    if (verbose)
+      plot_board(board)
+    if (is_done(board)) {
+      index <- state_index(board)
+      return(value_get(value_table, index))
+    }
+  }
+}
+
+
+
+
+
+
+
+
 
 value_table <- readRDS("value_table.RDS")
 
 
 
-symbols <- setNames(c("O"," ","X"),c(-1,0,1))
-reshape2::melt(board) %>% 
-  ggplot(aes(as.factor(Var2),
-             factor(Var1, levels = c(3, 2, 1)))) +
-  geom_tile(color = "black", fill = "white") +
-  geom_text(aes(label = symbols[as.character(value)])
-            , size = 20) +
-  labs(x = "",y = "", color = "")
+
