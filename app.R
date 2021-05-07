@@ -24,6 +24,7 @@ server <- function(input, output, session) {
   eps <- 0.01
   alpha <- 0.5
   old_state_index <- reactiveVal()
+  last_state_value <- reactiveVal()
   winner <- reactiveVal()
   
   
@@ -39,10 +40,28 @@ server <- function(input, output, session) {
   
   melt_board_reactive <- reactive({
     melt(board_reactive()) %>%
-      mutate(Var1 = factor(Var1),
-             Var2 = factor(Var2, levels = c(3, 2, 1)))
+      mutate(
+        Var1 = factor(Var1),
+        Var2 = factor(Var2, levels = c(3, 2, 1)),
+        labels = if_else(value == 1 , "X", if_else(value == -1, "O", ""))
+      )
   })
   
+  
+  output$board_plot <- renderPlot({
+    # symbols <- setNames(c("O", " ", "X"), c(-1, 0, 1))
+    ggplot(melt_board_reactive(), aes(Var2, Var1)) +
+      geom_tile(color = "black", fill = "white") +
+      geom_text(aes(label = labels, color = labels), size = 20) +
+      # scale_colour_manual(values=c("white", "#000000", "#FF5733")) +
+      theme_void() +
+      theme(legend.position = "none", # axis.ticks = element_blank(), axis.text = element_blank(), 
+            plot.background = element_rect(fill = "lightblue")) +
+      labs(x = "", y = "", color = "") 
+  })
+  
+  
+  # players section ---------
   
   player_two_move_reactive <- eventReactive(
     input$player_two_move, {
@@ -75,16 +94,13 @@ server <- function(input, output, session) {
   observeEvent(input$player_two_move, {
     # browser()
     print("player")
-
-    player_two_move <- player_two_move_reactive()
+  
     
-    if(!(player_two_move %in% possible_moves(board)))
+    player_two_move <- player_two_move_reactive()
+    if(!(player_two_move %in% possible_moves(board)) | is_done(board))
       return()
     
     old_state_index(state_index(board))
-    
-
-    
     
     board <<- next_state(board, player = player_two, move = player_two_move) #player_two(O) move
     board_reactive(board)
@@ -92,7 +108,8 @@ server <- function(input, output, session) {
     if (is_done(board)) {
       current_state_index <- state_index(board)
       value_table <<- value_update(old_state_index(), current_state_index, alpha)
-      winner(value_get(value_table, current_state_index))
+      last_state_value(value_get(value_table, current_state_index))
+      winner(whos_winner(board))
       old_state_index(NULL)
     }
   })
@@ -115,25 +132,20 @@ server <- function(input, output, session) {
     
     if (is_done(board)) {
       index <- state_index(board)
-      winner(value_get(value_table, index))
+      last_state_value(value_get(value_table, index))
+      winner(whos_winner(board))
     }
   })
   
   
   
-  
-  output$board_plot <- renderPlot({
-    symbols <- setNames(c("O", " ", "X"), c(-1, 0, 1))
-    ggplot(melt_board_reactive(), aes(Var2, Var1)) +
-      geom_tile(color = "black", fill = "white") +
-      geom_text(aes(label = symbols[as.character(value)]), size = 20) +
-      labs(x = "", y = "", color = "")
-  })
+
   
   
   
   output$data <- renderTable({
     print(winner())
+    print(last_state_value())
   })
   
   # saving `value_table` ---------
