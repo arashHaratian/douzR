@@ -75,11 +75,16 @@ server <- function(input, output, session) {
   observeEvent(input$player_two_move, {
     # browser()
     print("player")
+
+    player_two_move <- player_two_move_reactive()
+    
+    if(!(player_two_move %in% possible_moves(board)))
+      return()
+    
     old_state_index(state_index(board))
     
-    player_two_move <- player_two_move_reactive()
-    while (!(player_two_move %in% possible_moves(board)))
-      player_two_move <- player_two_move_reactive()
+
+    
     
     board <<- next_state(board, player = player_two, move = player_two_move) #player_two(O) move
     board_reactive(board)
