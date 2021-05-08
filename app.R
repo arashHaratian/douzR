@@ -4,6 +4,7 @@ source("ttt.R")
 ui <- fluidPage(
   titlePanel(h1("fuel my agent!", align = "center"), "douzR"),
   fluidRow(h2(textOutput("precision")), align = "center"),
+
   fluidRow(column(8,
                   plotOutput(
                     "board_plot",
@@ -11,6 +12,9 @@ ui <- fluidPage(
                     width = "auto",
                     height = 700),
                   offset = 2)),
+  
+  fluidRow(br(), uiOutput("play_again_button"), align = "center"),
+
   fluidRow(plotOutput("stats_plot")),
   tableOutput("data")
 )
@@ -49,15 +53,14 @@ server <- function(input, output, session) {
   
   
   output$board_plot <- renderPlot({
-    # symbols <- setNames(c("O", " ", "X"), c(-1, 0, 1))
     ggplot(melt_board_reactive(), aes(Var2, Var1)) +
       geom_tile(color = "black", fill = "white") +
-      geom_text(aes(label = labels, color = labels), size = 20) +
-      # scale_colour_manual(values=c("white", "#000000", "#FF5733")) +
+      geom_text(aes(label = labels, color = if_else(labels == "O" , "col1", "col2")), size = 20) +
+      # scale_colour_manual(values=c("#00BFC4", "#F8766D")) +
       theme_void() +
       theme(legend.position = "none", # axis.ticks = element_blank(), axis.text = element_blank(), 
-            plot.background = element_rect(fill = "lightblue")) +
-      labs(x = "", y = "", color = "") 
+            plot.background = element_rect(fill = "lightblue"))
+      #+ labs(x = "", y = "", color = "") 
   })
   
   
@@ -89,10 +92,8 @@ server <- function(input, output, session) {
   )
   
   
-  
   # player move
   observeEvent(input$player_two_move, {
-    # browser()
     print("player")
   
     
@@ -137,19 +138,50 @@ server <- function(input, output, session) {
     }
   })
   
+  # end section ---------
+  
+  # show notif and render button
+  observeEvent(winner(), {
+    
+    message <- switch(as.character(winner()),
+                          "1" = "douzR is the winner.",
+                          "-1" =  "You are the winner.",
+                          "TIE!")
+    output$play_again_button <- renderUI(actionButton("paly_again", label = div(h3("Paly Again", icon("undo"))), width = "25%", style = 'padding:20px'))
+    
+    showNotification(message,
+                     id = "notification",
+                     # action = a(href = "javascript:location.reload();", "Play again!"),
+                     duration = NULL,
+                     type = "message")
+  })
   
   
-
+  observeEvent(input$paly_again, {
+    old_state_index(NULL)
+    last_state_value(NULL)
+    winner(NULL)
+    board <<- initialize()
+    board_reactive(board)
+    saveRDS(value_table, "value_table.RDS")
+    removeUI(selector='#paly_again', immediate = TRUE)
+    removeNotification("notification")
+  })
   
-  
-  
-  output$data <- renderTable({
-    print(winner())
-    print(last_state_value())
+  # log section --------
+  observe({
+    cat("\n\n")
+    cat("last_state_value: ", last_state_value(), "\n")
+    cat("winner: ", winner(), "\n")
+    cat("old_state_index: ", old_state_index(), "\n")
+    cat("board_reactive", board_reactive(), "\n")
+    cat("\n\n")
+    
   })
   
   # saving `value_table` ---------
   onStop(function() {
+    message("session ended")
     saveRDS(value_table, "value_table.RDS")
   })
 }

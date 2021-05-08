@@ -161,7 +161,6 @@ value_update <- function(previous_state_index, current_state_index, alpha) {
 
 # play a full game (player_one(X) will learn and player_two(O) will act randomly)
 game <- function(eps = 0.01, alpha = 0.5, verbose = F) {
-  # message("starting a new game...\n")
   board <- initialize()
   if (verbose)
     print_board(board)
@@ -272,6 +271,21 @@ interactive_game <- function(eps = 0.01, alpha = 0.5, verbose = T) {
   }
 }
 
+
+whos_winner <- function(board) {
+  if (any(colSums(board) == 3L) | any(rowSums(board) == 3L) |
+      any(sum(diag(board)) == 3L) |
+      any(sum(diag(board[nrow(board):1, ])) == 3L)) {
+    return(1) ## for player one
+  }
+  if (any(colSums(board) == -3L) | any(rowSums(board) == -3L) |
+      any(sum(diag(board)) == -3L) |
+      any(sum(diag(board[nrow(board):1, ])) == -3L)) {
+    return(-1)  ## for player two
+  } else if (all(board != 0)) {
+    return(0)  ## tie
+  }
+}
 
 
 
