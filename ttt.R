@@ -289,6 +289,22 @@ whos_winner <- function(board) {
 
 
 
+win_position <- function(board){
+  
+  temp <- colSums(board) == 3L | colSums(board) == -3L
+  if(any(temp))
+    return(geom_vline(xintercept = which(rev(temp)), size = 3)) # reverse of `temp` because x axis is invert
+
+  temp <- rowSums(board) == 3L | rowSums(board) == -3L
+  if(any(temp))
+    return(geom_hline(yintercept = which(temp), size = 3))
+  
+  if(sum(diag(board)) == -3L |  sum(diag(board)) == 3L)
+    return(geom_abline(slope = -1, intercept = 4, size = 3))  # because x axis is invert
+  
+  if(sum(diag(board[nrow(board):1, ])) == -3L |  sum(diag(board[nrow(board):1, ])) == 3L)
+    return(geom_abline(slope = 1, intercept = 0, size = 3))   # because x axis is invert
+}
 
 
 

@@ -32,7 +32,6 @@ server <- function(input, output, session) {
   winner <- reactiveVal()
   
   
-  
   # precision section ---------
   output$precision <- renderText({
     paste("douzR precision: ",sum(!is.na(value_table)) ,"%") #TODO: getting percision
@@ -53,9 +52,11 @@ server <- function(input, output, session) {
   
   
   output$board_plot <- renderPlot({
+    print(win_position(board_reactive()))
     ggplot(melt_board_reactive(), aes(Var2, Var1)) +
       geom_tile(color = "black", fill = "white") +
       geom_text(aes(label = labels, color = if_else(labels == "O" , "col1", "col2")), size = 20) +
+      win_position(board_reactive()) +
       # scale_colour_manual(values=c("#00BFC4", "#F8766D")) +
       theme_void() +
       theme(legend.position = "none", # axis.ticks = element_blank(), axis.text = element_blank(), 
@@ -147,6 +148,7 @@ server <- function(input, output, session) {
                           "1" = "douzR is the winner.",
                           "-1" =  "You are the winner.",
                           "TIE!")
+    
     output$play_again_button <- renderUI(actionButton("paly_again", label = div(h3("Paly Again", icon("undo"))), width = "25%", style = 'padding:20px'))
     
     showNotification(message,
