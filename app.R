@@ -1,11 +1,14 @@
 library(shiny)
+library(plotly)
 source("ttt.R")
+
 
 ui <- fluidPage(
   titlePanel(h1("fuel my agent!", align = "center"), "douzR"),
+  
   fluidRow(h2(textOutput("precision")), align = "center"),
 
-  fluidRow(column(8,
+  fluidRow(br(), column(8,
                   plotOutput(
                     "board_plot",
                     click = "player_two_move",
@@ -14,11 +17,12 @@ ui <- fluidPage(
                   offset = 2)),
   
   fluidRow(br(), uiOutput("play_again_button"), align = "center"),
+  
+  fluidRow(br(), h2("stats"), align = "center"),
 
-  fluidRow(plotOutput("stats_plot")),
-  tableOutput("data")
+  fluidRow(column(8, plotlyOutput("stats_plot", width = "auto", height = 400),offset = 2))
 )
-
+  
 
 
 
@@ -28,13 +32,16 @@ server <- function(input, output, session) {
   eps <- 0.01
   alpha <- 0.5
   old_state_index <- reactiveVal()
-  last_state_value <- reactiveVal()
+  last_state_value <- reactiveVal()   #TODO
   winner <- reactiveVal()
+  update_stats_plot <- 3    #TODO
+  value_table <<- readRDS("value_table.RDS")
+  stats_list <<- readRDS("stats_list.RDS")
   
   
   # precision section ---------
   output$precision <- renderText({
-    paste("douzR precision: ",sum(!is.na(value_table)) ,"%") #TODO: getting percision
+    paste("douzR precision: ", round(stats_list$total_average, 2)  ,"%") #TODO: getting percision
   })
   
   # board section ---------
@@ -141,7 +148,7 @@ server <- function(input, output, session) {
   
   # end section ---------
   
-  # show notif and render button
+  # show notification and render button
   observeEvent(winner(), {
     
     message <- switch(as.character(winner()),
@@ -149,26 +156,58 @@ server <- function(input, output, session) {
                           "-1" =  "You are the winner.",
                           "TIE!")
     
-    output$play_again_button <- renderUI(actionButton("paly_again", label = div(h3("Paly Again", icon("undo"))), width = "25%", style = 'padding:20px'))
+    output$play_again_button <- renderUI(actionButton("play_again", label = div(h3("Play Again", icon("undo"))), width = "25%", style = 'padding:20px'))
     
     showNotification(message,
                      id = "notification",
                      # action = a(href = "javascript:location.reload();", "Play again!"),
                      duration = NULL,
                      type = "message")
+    
+    stats_list$winners <- append(stats_list$winners, last_state_value())
+    stats_list$total_count <- stats_list$total_count + 1
+    stats_list$total_average <- stats_list$total_average + 
+      (last_state_value() - stats_list$total_average) / stats_list$total_count
+   
+    
   })
   
   
-  observeEvent(input$paly_again, {
+  observeEvent(input$play_again, {
     old_state_index(NULL)
     last_state_value(NULL)
     winner(NULL)
     board <<- initialize()
     board_reactive(board)
-    saveRDS(value_table, "value_table.RDS")
-    removeUI(selector='#paly_again', immediate = TRUE)
+    saveRDS(value_table, "value_table.RDS")    #TODO
+    removeUI(selector = '#play_again', immediate = TRUE)
     removeNotification("notification")
   })
+  
+  # stats plot section -------
+  
+  observe({
+    if(length(stats_list$winners) == update_stats_plot){
+      stats_list$averages <- append(stats_list$averages, mean(stats_list$winners))
+      stats_list$winners <- c()
+    }
+  })
+  
+  output$stats_plot <- renderPlotly({
+    df <- data.frame("averages" = stats_list$averages) %>% 
+      mutate(x_axis = seq_len(length(averages)))
+    
+    plot <- ggplot(df, aes(x = x_axis, y = averages)) +
+      geom_line() +
+      geom_point(shape = 15, color = "#F8766D") +
+      labs(x = "", 
+           y = "average of douzR wins", #TODO: names
+           title = paste("win percentage over last", update_stats_plot))
+    
+    ggplotly(plot)
+    
+  })
+  
   
   # log section --------
   observe({
@@ -177,14 +216,17 @@ server <- function(input, output, session) {
     cat("winner: ", winner(), "\n")
     cat("old_state_index: ", old_state_index(), "\n")
     cat("board_reactive", board_reactive(), "\n")
+    cat("statslist", stats_list$winners, "\n")
+    cat("statslist", stats_list$averages, "\n")
     cat("\n\n")
     
   })
   
-  # saving `value_table` ---------
+  # saving `value_table` and `stats_list` ---------
   onStop(function() {
     message("session ended")
     saveRDS(value_table, "value_table.RDS")
+    saveRDS(stats_list, "stats_list.RDS")
   })
 }
 

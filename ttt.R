@@ -106,7 +106,7 @@ next_move <- function(board, player, epsilon) {
       map_dbl(.f = state_index) %>%
       # finally getting their values
       map_dbl(.f = value_get, value_table = value_table)
-    best_value <- which.max(values_of_legal_moves)
+    best_value <- which.max(values_of_legal_moves)  #TODO : max with tiebreak
     list <- list("move" = legal_moves[best_value], "is_greedy" = T)
     return(list)
   } else {
@@ -309,8 +309,6 @@ win_position <- function(board){
 
 
 
-
-value_table <- readRDS("value_table.RDS")
 
 
 
