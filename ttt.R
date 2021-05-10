@@ -214,7 +214,7 @@ runs <- function(num_runs = 10, num_bins = 40, bin_size = 100, ...) {
   invisible(mat)
 } ##runs()
 
-
+# modified function for shiny ------------
 
 plot_board <- function(board) {
   symbols <- setNames(c("O", " ", "X"),c(-1, 0, 1))
@@ -292,18 +292,27 @@ whos_winner <- function(board) {
 win_position <- function(board){
   
   temp <- colSums(board) == 3L | colSums(board) == -3L
-  if(any(temp))
-    return(geom_vline(xintercept = which(rev(temp)), size = 3)) # reverse of `temp` because x axis is invert
-
+  if(any(temp)){
+    x_pos <- which(rev(temp)) # reverse of `temp` because x axis is invert
+    return(geom_segment(aes(x = x_pos, xend = x_pos, y = 0.7, yend = 3.3), size = 3)) 
+  }
   temp <- rowSums(board) == 3L | rowSums(board) == -3L
-  if(any(temp))
-    return(geom_hline(yintercept = which(temp), size = 3))
+  if(any(temp)){
+    y_pos <- which(temp)
+    return(geom_segment(aes(x = 0.7, xend = 3.3, y = y_pos, yend = y_pos), size = 3))
+  }
+  if(sum(diag(board)) == -3L |  sum(diag(board)) == 3L){
+    min_pos <- 0.7
+    max_pos <- 3.3
+    return((geom_segment(aes(x = max_pos, xend = min_pos,    # because x_axis is inverted
+                             y = min_pos, yend = max_pos), size = 3)))  
+  }
   
-  if(sum(diag(board)) == -3L |  sum(diag(board)) == 3L)
-    return(geom_abline(slope = -1, intercept = 4, size = 3))  # because x axis is invert
-  
-  if(sum(diag(board[nrow(board):1, ])) == -3L |  sum(diag(board[nrow(board):1, ])) == 3L)
-    return(geom_abline(slope = 1, intercept = 0, size = 3))   # because x axis is invert
+  if(sum(diag(board[nrow(board):1, ])) == -3L |  sum(diag(board[nrow(board):1, ])) == 3L){
+    min_pos <- 0.7
+    max_pos <- 3.3
+    return((geom_segment(aes(x = min_pos, xend = max_pos, y = min_pos, yend = max_pos), size = 3)))  
+  }
 }
 
 

@@ -3,7 +3,7 @@ library(plotly)
 source("ttt.R")
 
 
-ui <- fluidPage(
+ui <- fluidPage(theme = shinythemes::shinytheme("slate"), 
   titlePanel(h1("fuel my agent!", align = "center"), "douzR"),
   
   fluidRow(h2(textOutput("precision")), align = "center"),
@@ -103,7 +103,6 @@ server <- function(input, output, session) {
   # player move
   observeEvent(input$player_two_move, {
     print("player")
-  
     
     player_two_move <- player_two_move_reactive()
     if(!(player_two_move %in% possible_moves(board)) | is_done(board))
@@ -204,8 +203,15 @@ server <- function(input, output, session) {
            y = "average of douzR wins", #TODO: names
            title = paste("win percentage over last", update_stats_plot))
     
-    ggplotly(plot)
-    
+    ggplotly(plot) %>% 
+      layout(plot_bgcolor='transparent') %>%
+      layout(paper_bgcolor='rgb(67, 139, 203)') %>% 
+      layout(fig_bgcolor = "rgba(0, 0, 0, 0)")
+      # layout(paper_bgcolor='transparent')
+  
+  # layout(plot_bgcolor  = "rgba(0, 0, 0, 0)",
+  #        paper_bgcolor = "rgba(0, 0, 0, 0)",
+  #        fig_bgcolor   = "rgba(0, 0, 0, 0)")
   })
   
   
