@@ -1,3 +1,6 @@
+library(plotly)
+library(thematic)
+
 function(input, output, session) {
   
   
@@ -176,7 +179,7 @@ function(input, output, session) {
     df <- data.frame("averages" = stats_list$averages) %>% 
       mutate(x_axis = seq_len(length(averages)))
     
-    thematic::thematic_local_theme(thematic::thematic_theme(bg = "#393e46", fg = "#00adb5", font = "#374785"))
+    thematic_local_theme(thematic_theme(bg = "#393e46", fg = "#00adb5", font = "#374785"))
     
     plot <- ggplot(df, aes(x = x_axis, y = averages, color = "col")) +
       geom_line() +

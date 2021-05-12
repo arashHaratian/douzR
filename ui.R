@@ -1,5 +1,8 @@
+library(plotly)
+library(shinythemes)
+
 fluidPage( style = "background-color: #bad7df; color: #0061a8;",
-           theme = shinythemes::shinytheme("flatly"),
+           theme = shinytheme("flatly"),
            
            titlePanel(h1("Welcome to DouzR", align = "center"), "douzR"),
            
