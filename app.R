@@ -3,30 +3,50 @@ library(plotly)
 source("ttt.R")
 
 
-ui <- fluidPage(theme = shinythemes::shinytheme("slate"), 
-  titlePanel(h1("fuel my agent!", align = "center"), "douzR"),
+ui <- fluidPage( style = "background-color: #bad7df; color: #0061a8;",
+  theme = shinythemes::shinytheme("flatly"),
   
-  fluidRow(h2(textOutput("precision")), align = "center"),
-
+  titlePanel(h1("Welcome to DouzR", align = "center"), "douzR"),
+  
+  h3("FUEL MY AGENT !", align = "center"),
+  h4("Play some tic-tac-toe and let my agent learn from you.", align = "center"),
+  
+  fluidRow(br(), h2(textOutput("precision")), align = "center"),
+  
   fluidRow(br(), column(8,
-                  plotOutput(
-                    "board_plot",
-                    click = "player_two_move",
-                    width = "auto",
-                    height = 700),
-                  offset = 2)),
+                        plotOutput(
+                          "board_plot",
+                          click = "player_two_move",
+                          width = "auto",
+                          height = 700),
+                        offset = 2)),
   
   fluidRow(br(), uiOutput("play_again_button"), align = "center"),
   
   fluidRow(br(), h2("stats"), align = "center"),
-
-  fluidRow(column(8, plotlyOutput("stats_plot", width = "auto", height = 400),offset = 2))
-)
   
+  h4("The plot below shows the win rate of the douzR against other players.
+     Each point is an average of ", textOutput("number_of_games", inline = TRUE), "game results."),
+  
+  fluidRow(br(), column(8, plotlyOutput("stats_plot", width = "auto", height = 500),offset = 2)),
+  
+  fluidRow(br(), h2("About"), align = "center"), 
+  
+  h4("This game is a re-implementation of the tic-tac-toe game from the first chapter of Reinforcement Learning: An Introduction, 2nd edition by Richard Sutton and Andrew Barto.
+  douzR uses a Reinforcement learning algorithm called temporal difference learning (TD).
+  This method interacts with the environment and updates the state values."),
+  h4(" Learn more:"), 
+  tags$div(tags$ul(
+    tags$li(tags$a(href = "http://incompleteideas.net/book/the-book.html", "Reinforcement Learning: An Introduction")),
+    tags$li(tags$a(href = "http://incompleteideas.net/book/code/TTT.lisp", "Original code for tic-tac-toe with TD method")),
+    tags$li(tags$a(href = "https://github.com/arashHaratian/Reinforcement_Learning-an_Introduction-in_R", "R re-implementation of Reinforcement Learning: an Introduction")))) #,  style = "font-size: 15px"
+)
 
 
 
 server <- function(input, output, session) {
+  
+  
   
   # parameters ----------
   eps <- 0.01
@@ -34,14 +54,14 @@ server <- function(input, output, session) {
   old_state_index <- reactiveVal()
   last_state_value <- reactiveVal()   #TODO
   winner <- reactiveVal()
-  update_stats_plot <- 3    #TODO
+  update_stats_plot <- 100    #TODO
   value_table <<- readRDS("value_table.RDS")
   stats_list <<- readRDS("stats_list.RDS")
   
   
   # precision section ---------
   output$precision <- renderText({
-    paste("douzR precision: ", round(stats_list$total_average, 2)  ,"%") #TODO: getting percision
+    paste("douzR precision: ", round(mean(stats_list$averages) * 100, 2)  ,"%") #TODO: getting percision
   })
   
   # board section ---------
@@ -59,16 +79,12 @@ server <- function(input, output, session) {
   
   
   output$board_plot <- renderPlot({
-    print(win_position(board_reactive()))
     ggplot(melt_board_reactive(), aes(Var2, Var1)) +
-      geom_tile(color = "black", fill = "white") +
-      geom_text(aes(label = labels, color = if_else(labels == "O" , "col1", "col2")), size = 20) +
+      geom_tile(color = "#45eba5", fill = "#374785") +
+      geom_text(aes(label = labels, color = if_else(labels == "O" , "col1", "col2")), size = 25) +
       win_position(board_reactive()) +
-      # scale_colour_manual(values=c("#00BFC4", "#F8766D")) +
       theme_void() +
-      theme(legend.position = "none", # axis.ticks = element_blank(), axis.text = element_blank(), 
-            plot.background = element_rect(fill = "lightblue"))
-      #+ labs(x = "", y = "", color = "") 
+      theme(legend.position = "none", plot.background = element_rect(fill = "#393e46"))
   })
   
   
@@ -81,7 +97,7 @@ server <- function(input, output, session) {
         input$player_two_move,
         "Var1",
         "Var2",
-        threshold = 100,
+        threshold = 110,
         maxpoints = 1)
       
       if(nrow(point) != 0){
@@ -98,7 +114,6 @@ server <- function(input, output, session) {
       index
     }
   )
-  
   
   # player move
   observeEvent(input$player_two_move, {
@@ -127,7 +142,7 @@ server <- function(input, output, session) {
   observeEvent(old_state_index(), {
     print("RL")
     req(old_state_index())
-
+    
     player_one_move <- next_move(board, player = player_one, epsilon = eps)
     
     board <<- next_state(board, player = player_one, move = player_one_move$move)
@@ -145,30 +160,33 @@ server <- function(input, output, session) {
     }
   })
   
+  
+  
+  
   # end section ---------
   
   # show notification and render button
   observeEvent(winner(), {
     
     message <- switch(as.character(winner()),
-                          "1" = "douzR is the winner.",
-                          "-1" =  "You are the winner.",
-                          "TIE!")
+                      "1" = "douzR is the winner.",
+                      "-1" =  "You are the winner.",
+                      "TIE!")
     
-    output$play_again_button <- renderUI(actionButton("play_again", label = div(h3("Play Again", icon("undo"))), width = "25%", style = 'padding:20px'))
+    output$play_again_button <-
+      renderUI(actionButton(
+        "play_again",
+        label = div(h3("Play Again", icon("undo"))),
+        width = "25%",
+        style = 'padding:20px',
+        class = "btn-primary"
+      ))
     
     showNotification(message,
                      id = "notification",
-                     # action = a(href = "javascript:location.reload();", "Play again!"),
-                     duration = NULL,
-                     type = "message")
+                     duration = NULL)
     
     stats_list$winners <- append(stats_list$winners, last_state_value())
-    stats_list$total_count <- stats_list$total_count + 1
-    stats_list$total_average <- stats_list$total_average + 
-      (last_state_value() - stats_list$total_average) / stats_list$total_count
-   
-    
   })
   
   
@@ -185,6 +203,12 @@ server <- function(input, output, session) {
   
   # stats plot section -------
   
+  observeEvent(input$player_two_move, { #TODO
+    if(F)
+      run_with_stats(40, bin_size = update_stats_plot)
+  })
+  
+  
   observe({
     if(length(stats_list$winners) == update_stats_plot){
       stats_list$averages <- append(stats_list$averages, mean(stats_list$winners))
@@ -192,27 +216,27 @@ server <- function(input, output, session) {
     }
   })
   
+  
+  
   output$stats_plot <- renderPlotly({
     df <- data.frame("averages" = stats_list$averages) %>% 
       mutate(x_axis = seq_len(length(averages)))
     
-    plot <- ggplot(df, aes(x = x_axis, y = averages)) +
-      geom_line() +
-      geom_point(shape = 15, color = "#F8766D") +
-      labs(x = "", 
-           y = "average of douzR wins", #TODO: names
-           title = paste("win percentage over last", update_stats_plot))
+    thematic::thematic_local_theme(thematic::thematic_theme(bg = "#393e46", fg = "#00adb5", font = "#374785"))
     
-    ggplotly(plot) %>% 
-      layout(plot_bgcolor='transparent') %>%
-      layout(paper_bgcolor='rgb(67, 139, 203)') %>% 
-      layout(fig_bgcolor = "rgba(0, 0, 0, 0)")
-      # layout(paper_bgcolor='transparent')
-  
-  # layout(plot_bgcolor  = "rgba(0, 0, 0, 0)",
-  #        paper_bgcolor = "rgba(0, 0, 0, 0)",
-  #        fig_bgcolor   = "rgba(0, 0, 0, 0)")
+    plot <- ggplot(df, aes(x = x_axis, y = averages, color = "col")) +
+      geom_line() +
+      geom_point() +
+      theme(legend.position = "none") +
+      labs(x = "",
+           y = "Performance")
+    
+    
+    ggplotly(plot)
+
   })
+  
+  output$number_of_games <- renderText(update_stats_plot)
   
   
   # log section --------
@@ -234,6 +258,9 @@ server <- function(input, output, session) {
     saveRDS(value_table, "value_table.RDS")
     saveRDS(stats_list, "stats_list.RDS")
   })
+  
+  
 }
 
 shinyApp(ui, server)
+
