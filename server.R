@@ -179,7 +179,7 @@ function(input, output, session) {
     df <- data.frame("averages" = stats_list$averages) %>% 
       mutate(x_axis = seq_len(length(averages)))
     
-    thematic_local_theme(thematic_theme(bg = "#393e46", fg = "#00adb5", font = "#374785"))
+    thematic_local_theme(thematic_theme(bg = "#393e46", fg = "#00adb5"))
     
     plot <- ggplot(df, aes(x = x_axis, y = averages, color = "col")) +
       geom_line() +
@@ -199,12 +199,13 @@ function(input, output, session) {
   # log section --------
   observe({
     cat("\n\n")
-    cat("last_state_value: ", last_state_value(), "\n")
+    # cat("last_state_value: ", last_state_value(), "\n")
     cat("winner: ", winner(), "\n")
-    cat("old_state_index: ", old_state_index(), "\n")
-    cat("board_reactive", board_reactive(), "\n")
-    cat("statslist", stats_list$winners, "\n")
-    cat("statslist", stats_list$averages, "\n")
+    # cat("old_state_index: ", old_state_index(), "\n")
+    # cat("board_reactive", board_reactive(), "\n")
+    # cat("statslist", stats_list$winners, "\n")
+    # cat("statslist", stats_list$averages, "\n")
+    cat("value_table states:", sum(!is.na(value_table)), "\n")
     cat("\n\n")
     
   })
