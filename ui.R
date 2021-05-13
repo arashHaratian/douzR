@@ -24,6 +24,7 @@ fluidPage(
   )),
   
   fluidRow(br(), uiOutput("play_again_button"), align = "center"),
+  fluidRow(br(), uiOutput("train_button"), align = "center"),
   
   fluidRow(br(), h2("Stats"), align = "center"),
   
@@ -39,8 +40,8 @@ fluidPage(
     selectInput(
       "update_stats_plot",
       "Choose the number of game results to calculate the average:",
-      choices = c(1, 10, 50, 100, 1000),
-      selected = 50
+      choices = c(10, 50, 100, 1000),
+      selected = 100
     ),
     align = "center"
   ),

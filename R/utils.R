@@ -1,15 +1,22 @@
-reset_value_table <- function(init_val = NA){
+reset_RDS_files <- function(init_val = NA){
   value_table <<- initialize_state_value(init_val)
   saveRDS(value_table, "value_table.RDS")
   
-  stats_list <- reactiveValues("winners" = c(), "averages" = c(0.5)) # , "total_average" = 0.5, "total_count" = 0
-  saveRDS(stats_list, "stats_list.RDS")
+  stats_vector <- reactiveVal(c(0, 1))
+  saveRDS(stats_vector, "stats_vector.RDS")
 }
 
 
 run_with_stats <- function(num_bins = 40, bin_size = 100, ...){
-  result <- run(num_bins, bin_size, ...)
-  stats_list$averages <- append(stats_list$averages, result)
+  
+  for(i in seq_len(num_bins)){
+    print(i)
+    temp <- vector("double", bin_size)
+    for(j in seq_len(bin_size))
+      temp[[j]] <- game(...)
+    
+    stats_vector(append(stats_vector(), temp))
+  }
 }
 
 

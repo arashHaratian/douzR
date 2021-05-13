@@ -6,11 +6,9 @@ library(thematic)
 if( !("value_table" %in% ls()) )
   value_table <<- readRDS("value_table.RDS")
 
-if( !("stats_list" %in% ls()) )
-  stats_list <<- readRDS("stats_list.RDS")
+if( !("stats_vector" %in% ls()) )
+stats_vector <<- readRDS("stats_vector.RDS")
 
-
-print(ls())
 
 
 function(input, output, session) {
@@ -21,16 +19,16 @@ function(input, output, session) {
   eps <- 0.01
   alpha <- 0.5
   old_state_index <- reactiveVal()
-  last_state_value <- reactiveVal()   #TODO
+  last_state_value <- reactiveVal()
   winner <- reactiveVal()
-
+  show_train_button <- FALSE
   
 
   
   
   # precision section ---------
   output$precision <- renderText({
-    paste("douzR precision: ", round(mean(stats_list$averages) * 100, 2)  ,"%") #TODO: getting percision
+    paste("douzR precision: ", round(mean(stats_vector()) * 100, 2)  ,"%")
   })
   
   # board section ---------
@@ -137,6 +135,7 @@ function(input, output, session) {
   # show notification and render button
   observeEvent(winner(), {
     
+    
     message <- switch(as.character(winner()),
                       "1" = "douzR is the winner.",
                       "-1" =  "You are the winner.",
@@ -155,7 +154,8 @@ function(input, output, session) {
                      id = "notification",
                      duration = NULL)
     
-    stats_list$winners <- append(stats_list$winners, last_state_value())
+    stats_vector(append(stats_vector(), last_state_value()))
+    
   })
   
   
@@ -171,25 +171,32 @@ function(input, output, session) {
   
   # stats plot section -------
   
-
-  observeEvent(input$player_two_move, { 
-    if(F)      #TODO
-      run_with_stats(40, bin_size = input$update_stats_plot)
+  if(show_train_button)
+    output$train_button <-
+    renderUI(actionButton(
+      "train",
+      label = "TRAIN!",
+      class = "btn-primary"
+    ))
+  
+  
+  observeEvent(input$train, {
+      run_with_stats(40, bin_size = as.integer(input$update_stats_plot))
   })
   
   
-  observe({
-    if(length(stats_list$winners) >= input$update_stats_plot){
-      print("here")
-      stats_list$averages <- append(stats_list$averages, mean(stats_list$winners))
-      stats_list$winners <- c()
-    }
+  stats_averages <- reactive({
+    len <- length(stats_vector())
+    if(len < as.integer(input$update_stats_plot))
+      return(0.5)
+    
+    last_index <- len - len %% as.integer(input$update_stats_plot)
+    return(c(0.5, colMeans(matrix(stats_vector()[1:last_index], nrow = as.integer(input$update_stats_plot)))))
   })
-  
   
   
   output$stats_plot <- renderPlotly({
-    df <- data.frame("averages" = stats_list$averages) %>% 
+    df <- data.frame("averages" = stats_averages()) %>% 
       mutate(x_axis = seq_len(length(averages)))
     
     thematic_local_theme(thematic_theme(bg = "#393e46", fg = "#00adb5"))
@@ -216,19 +223,18 @@ function(input, output, session) {
     # cat("winner: ", winner(), "\n")
     # cat("old_state_index: ", old_state_index(), "\n")
     # cat("board_reactive", board_reactive(), "\n")
-    cat("statslist", stats_list$winners, "\n")
-    cat("statslist", stats_list$averages, "\n")
+    # cat("stats_vector", stats_vector(), "\n")
     cat("value_table states:", sum(!is.na(value_table)), "\n")
-    cat("update_stats_plot:", input$update_stats_plot, "\n")
+    # cat("update_stats_plot:", input$update_stats_plot, "\n")
     cat("\n\n")
     
   })
   
-  # saving `value_table` and `stats_list` ---------
+  # saving `value_table` and `stats_vector` ---------
   onStop(function() {
     message("session ended")
     saveRDS(value_table, "value_table.RDS")
-    saveRDS(stats_list, "stats_list.RDS")
+    saveRDS(stats_vector, "stats_vector.RDS")
   })
   
   
