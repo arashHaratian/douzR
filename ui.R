@@ -39,7 +39,7 @@ fluidPage(
   fluidRow(
     selectInput(
       "update_stats_plot",
-      "Choose the number of game results to calculate the average:",
+      "Choose the number of game results for calculate the average:",
       choices = c(10, 50, 100, 1000),
       selected = 100
     ),
@@ -73,5 +73,5 @@ fluidPage(
         "R re-implementation of Reinforcement Learning: an Introduction"
       )
     )
-  )) #,  style = "font-size: 15px"
+  ))
 )
