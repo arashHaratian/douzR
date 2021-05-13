@@ -1,6 +1,18 @@
 library(plotly)
 library(thematic)
 
+
+
+if( !("value_table" %in% ls()) )
+  value_table <<- readRDS("value_table.RDS")
+
+if( !("stats_list" %in% ls()) )
+  stats_list <<- readRDS("stats_list.RDS")
+
+
+print(ls())
+
+
 function(input, output, session) {
   
   
@@ -11,9 +23,9 @@ function(input, output, session) {
   old_state_index <- reactiveVal()
   last_state_value <- reactiveVal()   #TODO
   winner <- reactiveVal()
-  update_stats_plot <- 100    #TODO
-  value_table <<- readRDS("value_table.RDS")
-  stats_list <<- readRDS("stats_list.RDS")
+
+  
+
   
   
   # precision section ---------
@@ -153,21 +165,21 @@ function(input, output, session) {
     winner(NULL)
     board <<- initialize()
     board_reactive(board)
-    saveRDS(value_table, "value_table.RDS")    #TODO
     removeUI(selector = '#play_again', immediate = TRUE)
     removeNotification("notification")
   })
   
   # stats plot section -------
   
-  observeEvent(input$player_two_move, { #TODO
-    if(F)
-      run_with_stats(40, bin_size = update_stats_plot)
+  observeEvent(input$player_two_move, { 
+    if(F)      #TODO
+      run_with_stats(40, bin_size = input$update_stats_plot)
   })
   
   
   observe({
-    if(length(stats_list$winners) == update_stats_plot){
+    if(length(stats_list$winners) >= input$update_stats_plot){
+      print("here")
       stats_list$averages <- append(stats_list$averages, mean(stats_list$winners))
       stats_list$winners <- c()
     }
@@ -193,19 +205,20 @@ function(input, output, session) {
     
   })
   
-  output$number_of_games <- renderText(update_stats_plot)
+  output$number_of_games <- renderText(input$update_stats_plot)
   
   
   # log section --------
   observe({
     cat("\n\n")
     # cat("last_state_value: ", last_state_value(), "\n")
-    cat("winner: ", winner(), "\n")
+    # cat("winner: ", winner(), "\n")
     # cat("old_state_index: ", old_state_index(), "\n")
     # cat("board_reactive", board_reactive(), "\n")
-    # cat("statslist", stats_list$winners, "\n")
-    # cat("statslist", stats_list$averages, "\n")
+    cat("statslist", stats_list$winners, "\n")
+    cat("statslist", stats_list$averages, "\n")
     cat("value_table states:", sum(!is.na(value_table)), "\n")
+    cat("update_stats_plot:", input$update_stats_plot, "\n")
     cat("\n\n")
     
   })
