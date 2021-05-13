@@ -171,6 +171,7 @@ function(input, output, session) {
   
   # stats plot section -------
   
+
   observeEvent(input$player_two_move, { 
     if(F)      #TODO
       run_with_stats(40, bin_size = input$update_stats_plot)
